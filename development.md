@@ -1,11 +1,7 @@
 ## Running unit tests
 
-Native python:
-```
-python -m unittest tests/
-```
+Run the test suite with uv (it creates/uses the project virtual environment automatically):
 
-Embedded python (Windows zip file installation method):
-```
-..\python_embeded\python.exe -m unittest
+```sh
+uv run python -m unittest discover -s tests
 ```

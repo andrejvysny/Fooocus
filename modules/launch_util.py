@@ -4,20 +4,13 @@ import importlib.util
 import shutil
 import subprocess
 import sys
-import re
 import logging
-import importlib.metadata
-import packaging.version
-from packaging.requirements import Requirement
 
 logging.getLogger("torch.distributed.nn").setLevel(logging.ERROR)  # sshh...
 logging.getLogger("xformers").addFilter(lambda record: 'A matching Triton is not available' not in record.getMessage())
 
-re_requirement = re.compile(r"\s*([-\w]+)\s*(?:==\s*([-+.\w]+))?\s*")
-
 python = sys.executable
 default_command_live = (os.environ.get('LAUNCH_LIVE_OUTPUT') == "1")
-index_url = os.environ.get('INDEX_URL', "")
 
 modules_path = os.path.dirname(os.path.realpath(__file__))
 script_path = os.path.dirname(modules_path)
@@ -62,42 +55,6 @@ def run(command, desc=None, errdesc=None, custom_env=None, live: bool = default_
         raise RuntimeError("\n".join(error_bits))
 
     return (result.stdout or "")
-
-
-def run_pip(command, desc=None, live=default_command_live):
-    try:
-        index_url_line = f' --index-url {index_url}' if index_url != '' else ''
-        return run(f'"{python}" -m pip {command} --prefer-binary{index_url_line}', desc=f"Installing {desc}",
-                   errdesc=f"Couldn't install {desc}", live=live)
-    except Exception as e:
-        print(e)
-        print(f'CMD Failed {desc}: {command}')
-        return None
-
-
-def requirements_met(requirements_file):
-    with open(requirements_file, "r", encoding="utf8") as file:
-        for line in file:
-            line = line.strip()
-            if line == "" or line.startswith('#'):
-                continue
-
-            requirement = Requirement(line)
-            package = requirement.name
-
-            try:
-                version_installed = importlib.metadata.version(package)
-                installed_version = packaging.version.parse(version_installed)
-
-                # Check if the installed version satisfies the requirement
-                if installed_version not in requirement.specifier:
-                    print(f"Version mismatch for {package}: Installed version {version_installed} does not meet requirement {requirement}")
-                    return False
-            except Exception as e:
-                print(f"Error checking version for {package}: {e}")
-                return False
-
-    return True
 
 
 def delete_folder_content(folder, prefix=None):

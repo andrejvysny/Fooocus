@@ -68,17 +68,17 @@ Also, if your system swap is on HDD, the speed of model loading will be very slo
 
 If you are using Linux/Mac, please follow your provider's instructions to set Swap Space. Herein, the "provider" refers to Ubuntu official, CentOS official, Mac official, etc.
 
-If you are using Windows, you can set Swap here:
+On Linux, you can add a swapfile (example: 40GB):
 
-![swap](https://github.com/lllyasviel/Fooocus/assets/19834515/2a06b130-fe9b-4504-94f1-2763be4476e9)
+    sudo fallocate -l 40G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    # make it permanent by appending to /etc/fstab:  /swapfile none swap sw 0 0
 
-If you use both HDD and SSD, you *may* test some settings on the above step 7 to try best to put swap area on SSD, so that the speed of model loading will be faster.
+Prefer placing the swapfile on an SSD/NVMe drive so model loading stays fast.
 
-**Important: Microsoft Windows 10/11 by default automate system swap for you so that you do not need to touch this dangerous setting. If you do not have enough system swap, just make sure that you have at least 40GB free space on each disk.** The Microsoft Windows 10/11 will automatically make swap areas for you.
-
-Also, if you obtain Microsoft Windows 10/11 from some unofficial Chinese or Russian provider, they may have modified the default setting of system swap to advertise some "Enhanced Windows 10/11" (but actually they are just making things worse rather than improve things). In those cases, you may need to manually check if your system swap setting is consistent to the above screenshot.
-
-Finally, note that you need to restart computer to activate any changes in system swap.
+On macOS, the system manages swap automatically; just keep plenty of free disk space.
 
 ### MetadataIncompleteBuffer
 
@@ -120,9 +120,9 @@ If you get this error elsewhere in the world, then you may need to look at [this
 
 A very small amount of devices does have this problem. The cause can be complicated but usually can be resolved after following these steps:
 
-1. Make sure that you are using official version and latest version installed from [here](https://github.com/lllyasviel/Fooocus#download). (Some forks and other versions are more likely to cause this problem.)
+1. Make sure that you are using official version and latest version installed from [here](https://github.com/lllyasviel/Fooocus#install). (Some forks and other versions are more likely to cause this problem.)
 2. Upgrade your Nvidia driver to the latest version. (Usually the version of your Nvidia driver should be 53X, not 3XX or 4XX.)
-3. If things still do not work, then perhaps it is a problem with CUDA 12. You can use CUDA 11 and Xformers to try to solve this problem. We have prepared all files for you, and please do NOT install any CUDA or other environment on you own. The only one official way to do this is: (1) Backup and delete your `python_embeded` folder (near the `run.bat`); (2) Download the "previous_old_xformers_env.7z" from the [release page](https://github.com/lllyasviel/Fooocus/releases/tag/release), decompress it, and put the newly extracted `python_embeded` folder near your `run.bat`; (3) run Fooocus.
+3. If things still do not work, it may be a mismatch between the bundled CUDA wheels and your driver. Edit the `pytorch-cu128` index URL in `pyproject.toml` to a CUDA version matching your driver (e.g. `cu126`), then run `uv lock` followed by `uv sync`. As a last resort you can also add xformers with `uv add xformers`.
 4. If it still does not work, please open an issue for us to take a look.
 
 ### Found no NVIDIA driver on your system
@@ -157,17 +157,9 @@ It is a BUG. Please let us know as soon as possible. Please make an issue. See a
 
 Supporting GPU with 4GB VRAM without fp16 is extremely difficult, and you may not be able to use SDXL. However, you may still make an issue and let us know. You may try SD1.5 in Automatic1111 or other software for your device. See also [minimal requirements](https://github.com/lllyasviel/Fooocus/tree/main?tab=readme-ov-file#minimal-requirement).
 
-### I am using AMD GPU on Windows, I get CUDA Out Of Memory
-
-Current AMD support is very experimental for Windows. If you see this, then perhaps you cannot use Fooocus on this device on Windows.
-
-However, if you re able to run SDXL on this same device on any other software, please let us know immediately, and we will support it as soon as possible. If no other software can enable your device to run SDXL on Windows, then we also do not have much to help.
-
-Besides, the AMD support on Linux is slightly better because it will use ROCM. You may also try it if you are willing to change OS to linux. See also [minimal requirements](https://github.com/lllyasviel/Fooocus/tree/main?tab=readme-ov-file#minimal-requirement).
-
 ### I am using AMD GPU on Linux, I get CUDA Out Of Memory
 
-Current AMD support for Linux is better than that for Windows, but still, very experimental. However, if you re able to run SDXL on this same device on any other software, please let us know immediately, and we will support it as soon as possible. If no other software can enable your device to run SDXL on Windows, then we also do not have much to help. See also [minimal requirements](https://github.com/lllyasviel/Fooocus/tree/main?tab=readme-ov-file#minimal-requirement).
+AMD support on Linux uses ROCm and is still experimental. Make sure you installed the ROCm PyTorch wheels (see the "Linux — AMD / ROCm" section in the readme). If you are able to run SDXL on this same device with other software, please let us know and we will try to support it. See also [minimal requirements](https://github.com/lllyasviel/Fooocus/tree/main?tab=readme-ov-file#minimal-requirement).
 
 ### I tried flags like --lowvram or --gpu-only or --bf16 or so on, and things are not getting any better?
 

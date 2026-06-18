@@ -76,8 +76,6 @@ fpte_group.add_argument("--clip-in-fp16", action="store_true")
 fpte_group.add_argument("--clip-in-fp32", action="store_true")
 
 
-parser.add_argument("--directml", type=int, nargs="?", metavar="DIRECTML_DEVICE", const=-1)
-
 parser.add_argument("--disable-ipex-hijack", action="store_true")
 
 class LatentPreviewMethod(enum.Enum):
@@ -108,7 +106,6 @@ parser.add_argument("--pytorch-deterministic", action="store_true")
 
 parser.add_argument("--disable-server-log", action="store_true")
 parser.add_argument("--debug-mode", action="store_true")
-parser.add_argument("--is-windows-embedded-python", action="store_true")
 
 parser.add_argument("--disable-server-info", action="store_true")
 
@@ -118,9 +115,6 @@ if ldm_patched.modules.options.args_parsing:
     args = parser.parse_args([])
 else:
     args = parser.parse_args([])
-
-if args.is_windows_embedded_python:
-    args.in_browser = True
 
 if args.disable_in_browser:
     args.in_browser = False

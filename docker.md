@@ -1,6 +1,6 @@
 # Fooocus on Docker
 
-The docker image is based on NVIDIA CUDA 12.4 and PyTorch 2.1, see [Dockerfile](Dockerfile) and [requirements_docker.txt](requirements_docker.txt) for details.
+The docker image is based on NVIDIA CUDA 12.8 and PyTorch 2.11 (cu128), built with the [uv](https://docs.astral.sh/uv/) package manager. See [Dockerfile](Dockerfile), [pyproject.toml](pyproject.toml) and [uv.lock](uv.lock) for details. If your NVIDIA driver requires a different CUDA version, adjust the base image tag in the Dockerfile and the `pytorch-cu128` index URL in `pyproject.toml`, then run `uv lock`.
 
 ## Requirements
 

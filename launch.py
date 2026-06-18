@@ -15,46 +15,29 @@ if "GRADIO_SERVER_PORT" not in os.environ:
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-import platform
 import fooocus_version
 
-from build_launcher import build_launcher
-from modules.launch_util import is_installed, run, python, run_pip, requirements_met, delete_folder_content
+from modules.launch_util import is_installed, delete_folder_content
 from modules.model_loader import load_file_from_url
-
-REINSTALL_ALL = False
-TRY_INSTALL_XFORMERS = False
 
 
 def prepare_environment():
-    torch_index_url = os.environ.get('TORCH_INDEX_URL', "https://download.pytorch.org/whl/cu121")
-    torch_command = os.environ.get('TORCH_COMMAND',
-                                   f"pip install torch==2.1.0 torchvision==0.16.0 --extra-index-url {torch_index_url}")
-    requirements_file = os.environ.get('REQS_FILE', "requirements_versions.txt")
-
     print(f"Python {sys.version}")
     print(f"Fooocus version: {fooocus_version.version}")
 
-    if REINSTALL_ALL or not is_installed("torch") or not is_installed("torchvision"):
-        run(f'"{python}" -m {torch_command}', "Installing torch and torchvision", "Couldn't install torch", live=True)
-
-    if TRY_INSTALL_XFORMERS:
-        if REINSTALL_ALL or not is_installed("xformers"):
-            xformers_package = os.environ.get('XFORMERS_PACKAGE', 'xformers==0.0.23')
-            if platform.system() == "Windows":
-                if platform.python_version().startswith("3.10"):
-                    run_pip(f"install -U -I --no-deps {xformers_package}", "xformers", live=True)
-                else:
-                    print("Installation of xformers is not supported in this version of Python.")
-                    print(
-                        "You can also check this and build manually: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Xformers#building-xformers-on-windows-by-duckness")
-                    if not is_installed("xformers"):
-                        exit(0)
-            elif platform.system() == "Linux":
-                run_pip(f"install -U -I --no-deps {xformers_package}", "xformers")
-
-    if REINSTALL_ALL or not requirements_met(requirements_file):
-        run_pip(f"install -r \"{requirements_file}\"", "requirements")
+    # Dependencies are managed by the `uv` package manager (pyproject.toml + uv.lock), not pip.
+    # Launching via `uv run` (or ./run.sh) creates/syncs the virtual environment automatically,
+    # so PyTorch should already be present here. If it isn't, the environment wasn't synced.
+    if not is_installed("torch") or not is_installed("torchvision"):
+        print()
+        print("ERROR: PyTorch is not available in this environment.")
+        print("Fooocus is managed with the 'uv' package manager. Start it with:")
+        print("    ./run.sh                              # macOS / Linux")
+        print("    uv run python entry_with_update.py    # equivalent, with auto-update")
+        print("    uv run python launch.py               # without auto-update")
+        print("uv will create the virtual environment from pyproject.toml + uv.lock for you.")
+        print("See readme.md for details.")
+        sys.exit(1)
 
     return
 
@@ -73,7 +56,6 @@ def ini_args():
 
 
 prepare_environment()
-build_launcher()
 args = ini_args()
 
 if args.gpu_device_id is not None:

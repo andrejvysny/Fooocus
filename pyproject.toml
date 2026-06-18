@@ -1,0 +1,81 @@
+[project]
+name = "fooocus"
+version = "2.5.5"
+description = "Fooocus — focus on prompting and generating (SDXL), tuned for Linux/NVIDIA and macOS Apple Silicon, managed with uv."
+readme = "readme.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+
+# NOTE on version policy (see docs/backend-strategy.md):
+#   * Most dependencies use ">=" floors so `uv lock` modernizes them to the latest compatible release.
+#   * A few are deliberately *held* because bumping them breaks the app — each is annotated below.
+dependencies = [
+    # ---- PyTorch (platform-specific wheels resolved via [tool.uv.sources]) ----
+    "torch>=2.7",
+    "torchvision>=0.22",
+
+    # ---- modernized stack (uv resolves to latest compatible) ----
+    "torchsde>=0.2.6",
+    "einops>=0.8.0",
+    "safetensors>=0.4.3",
+    "accelerate>=0.32.1",
+    "pyyaml>=6.0.1",
+    "scipy>=1.14.0",
+    "tqdm>=4.66.4",
+    "psutil>=6.0.0",
+    "pytorch-lightning>=2.3.3",
+    "omegaconf>=2.3.0",
+    "pygit2>=1.15.1",
+    "opencv-contrib-python-headless>=4.10.0.84",
+    "httpx>=0.27.0",
+    "onnxruntime>=1.18.1",
+    "timm>=1.0.7",
+    "packaging>=24.1",
+    "rembg>=2.0.57",
+
+    # ---- deliberate holds (bumping these breaks Fooocus) ----
+    "gradio==3.41.2",          # entire webui.py is built on the Gradio 3 API; 4/5 is a separate migration
+    "transformers==4.42.4",    # Fooocus pins this for SDXL CLIP + GPT2 prompt-expansion loading parity
+    "tokenizers>=0.19,<0.20",  # must match transformers 4.42.x
+    "numpy>=1.26.4,<2",        # gradio 3.x (numpy~=1.0) and older deps require numpy<2
+    "pillow>=10.4.0,<11",      # gradio 3.41.2 caps pillow<11
+
+    # ---- fragile native deps kept at upstream pins (build from sdist) ----
+    "groundingdino-py==0.4.0",
+    "segment-anything==1.0",
+]
+
+# Apple-Silicon MLX experiments are intentionally NOT listed here: mflux/mlx pull a modern
+# numpy>=2 / transformers stack that conflicts with the Gradio-3-era holds above. The MLX
+# sandbox is a standalone, isolated `uv run` script — see experiments/mlx_flux_generate.py.
+
+# ---------------------------------------------------------------------------
+# uv configuration
+# ---------------------------------------------------------------------------
+[tool.uv]
+# Fooocus is run from source (python launch.py), not installed as a package.
+package = false
+# Only solve/lock for the two supported targets: Linux/x86_64 (production, NVIDIA CUDA)
+# and macOS/arm64 (development, Apple Silicon / MPS). Windows is intentionally excluded.
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+# PyTorch CUDA wheel index for Linux. macOS falls back to PyPI, whose arm64 wheels
+# already include the MPS backend (PyTorch publishes no CUDA wheels for macOS).
+# Change cu128 -> cu126/cu129 to match your NVIDIA driver/CUDA toolkit if needed.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+
+# groundingdino-py ships only an sdist whose setup.py imports torch at build time and
+# declares no build-system requirements, so its metadata cannot be read without torch
+# present in the build environment. Inject it so `uv lock`/`uv sync` can build it.
+[tool.uv.extra-build-dependencies]
+groundingdino-py = ["torch", "setuptools", "wheel"]
